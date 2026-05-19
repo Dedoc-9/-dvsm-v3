@@ -1,0 +1,59 @@
+# fps_layer/fps_config.toml
+# =========================================================================
+# Runtime tuning for the FPS layer.
+# Designed around Battlefield 6 / Frostbite CPU-bound behavior on Ally X.
+# Adjust per title — open-world GPU-bound games may want different values.
+# =========================================================================
+
+[stutter_guard]
+# Ratio of current frame time to rolling mean that triggers a spike event.
+# 2.0 = frame took 2x the average → spike. Lower = more sensitive.
+# BF6 recommended: 2.0 (large fights cause legitimate variance; avoid false fires)
+# Open-world recommended: 1.6 (more consistent frame budget, lower tolerance)
+spike_ratio = 2.0
+
+# Frames of rolling baseline before spike detection activates.
+# Prevents false positives at session start.
+min_samples = 16
+
+# Consecutive CPU-bound frames before Win32 thread priority hint fires.
+# Lower = faster response to sustained bottleneck.
+# Higher = avoids elevating priority during transient simulation peaks.
+cpu_bound_run_threshold = 8
+
+# CPU fraction above which the frame is classified as CPU-bound.
+# 0.70 = CPU owns >70% of frame time → Frostbite simulation thread saturated.
+cpu_bound_fraction = 0.70
+
+[streaming_hint]
+# Number of asset slots in the streaming hint buffer.
+# Match your engine's streaming pool size. 64 is safe default.
+stream_slot_count = 64
+
+# Skip streaming_hint_pass dispatch when cpu_bound == true.
+# Recommended: true for BF6 (CPU-bound; don't add iGPU overhead)
+# Recommended: false for open-world (GPU-bound; hints help)
+skip_when_cpu_bound = true
+
+[supervisor_scaling]
+# When StutterAction::SuspendPrefetch fires, scale these supervisor params.
+# lambda_scale: multiply current lambda by this on suspend.
+# Lower lambda = less dissipation work per tick = less CPU cache pressure.
+# Do not set below 0.5 — below that, norm decay too slow.
+lambda_scale_on_suspend  = 0.7
+
+# alpha_scale: multiply current alpha on suspend.
+# Backreaction is the most expensive supervisor term. Scaling it down
+# frees the most compute budget per tick.
+alpha_scale_on_suspend   = 0.4
+
+# Restore full lambda/alpha after this many frames without a spike.
+restore_after_frames = 30
+
+[claims]
+# Do not edit. These are reminders, not config values.
+# All performance claims require FrameVarianceRing.p99() evidence.
+# Average FPS ceiling on BF6 is CPU-bound; DVSM does not raise it.
+# DVSM contribution is: spike reduction, streaming stutter elimination,
+# mip bandwidth relief. Measure with ring buffer before claiming numbers.
+requires_measurement = true
