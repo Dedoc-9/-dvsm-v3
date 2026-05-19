@@ -9,6 +9,7 @@ description        = "RDNA3 frame coherence supervisor: Lie-bracket dynamics, ba
 
 [lib]
 name       = "dvsm_v3"
+path       = "lib.rs"
 crate-type = ["rlib", "cdylib", "staticlib"]
 
 # hash_manifest: SHA-256 build reproducibility tool (requires --features tools)
