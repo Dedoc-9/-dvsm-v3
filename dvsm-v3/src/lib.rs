@@ -33,6 +33,10 @@
 #![no_std]
 #![allow(clippy::excessive_precision)]
 
+#[cfg(feature = "integration")]
+#[path = "../integration/mod.rs"]
+pub mod integration;
+
 use core::f32::consts::PI;
 
 // ---------------------------------------------------------------------------
@@ -562,6 +566,7 @@ impl DVSMSupervisor {
         actual_watts:       f32,
         thermal_headroom_c: f32,
     ) -> bool {
+
         let b = if self.profile.tdp_watts > 0.0 {
             (actual_watts / self.profile.tdp_watts).clamp(0.0, 1.0)
         } else { 0.0 };
