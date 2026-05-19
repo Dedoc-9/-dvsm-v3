@@ -1,0 +1,31 @@
+# MMO Open World (FFXIV, WoW open zones, GW2 world map)
+# Priority: smoothness, asset coverage, zero streaming hitches
+# Target: 60–120Hz display, 15–35W TDP
+
+[profile]
+tdp_watts    = 25.0
+dt           = 0.008333   # 1/120
+lambda       = 0.09       # slower decay — smooth Z trajectory over long camera pans
+alpha        = 0.06
+e_target     = 1.0
+ema_beta     = 0.97       # high lag — Z feels "glided", appropriate for exploration
+frame_gen    = "interpolate"
+vrs_enabled  = true
+
+[tuning]
+ghost_threshold     = 0.06   # lenient — MMO input latency tolerance is higher
+collapse_threshold  = 0.02
+rebirth_scale       = 0.4
+
+[spectral_io]
+divergence_threshold  = 0.12  # low — open world zone transitions are meaningful
+salience_threshold    = 0.18  # aggressive prefetch — large world assets, slow loads
+prefetch_ttl_frames   = 32    # ~267ms at 120Hz — enough to stream large texture packs
+
+[render_budget]
+resolution_floor      = 0.50   # 0.50 = 0.25× render cost — AFMF2 + driver upscale covers
+skip_frames_allowed   = true
+afmf2_multiplier      = 4      # 4× on static camera (tab UI, crafting, map screen)
+
+[notes]
+rationale = "Open world MMO camera pans trigger entropy divergence 8-12 frames early (larger spatial transitions than FPS). Markov salience predicts next zone's asset group with 32-frame TTL, eliminating the 1-2 frame streaming hitch at zone boundaries. Resolution drops to 0.50 during pans — players do not register aliasing artifacts at this scale of scene. AFMF2 4× multiplier during UI/crafting brings effective FPS to 4× at near-zero cost."

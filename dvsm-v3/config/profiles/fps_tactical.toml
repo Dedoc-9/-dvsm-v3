@@ -1,0 +1,31 @@
+# FPS Tactical (Tarkov, R6 Siege, Hunt: Showdown)
+# Priority: input latency ≈ smoothness, occasional frame skips on static aim
+# Target: 120–240Hz display, 25–35W TDP
+
+[profile]
+tdp_watts    = 30.0
+dt           = 0.004167   # 1/240
+lambda       = 0.12
+alpha        = 0.08
+e_target     = 1.0
+ema_beta     = 0.91       # slightly slower than competitive — smoother Z trajectory
+frame_gen    = "interpolate"
+vrs_enabled  = true
+
+[tuning]
+ghost_threshold     = 0.04
+collapse_threshold  = 0.01
+rebirth_scale       = 0.5
+
+[spectral_io]
+divergence_threshold  = 0.18  # moderate — map transitions are meaningful events
+salience_threshold    = 0.30
+prefetch_ttl_frames   = 12
+
+[render_budget]
+resolution_floor      = 0.67   # 0.67 = ~0.45× render cost, AFMF2 upscales
+skip_frames_allowed   = true   # allow skips during static scope hold
+afmf2_multiplier      = 2
+
+[notes]
+rationale = "Tactical FPS allows 1 skipped frame per scene when norm_variance < 0.05 (player holding still, scoped in). AFMF2 covers it seamlessly. Resolution drops to 0.67 during approach-to-objective (high entropy divergence from opening new areas of the map)."

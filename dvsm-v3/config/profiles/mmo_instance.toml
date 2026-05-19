@@ -1,0 +1,32 @@
+# MMO Instance (Raids, Dungeons, PvP battlegrounds)
+# Priority: stability under high entity count + VFX entropy spikes
+# Target: 60–120Hz display, 25–35W TDP
+
+[profile]
+tdp_watts    = 30.0
+dt           = 0.008333   # 1/120
+lambda       = 0.11       # slightly higher than open world — faster recovery from spikes
+alpha        = 0.07
+e_target     = 1.0
+ema_beta     = 0.94       # moderate lag — stable across raid VFX without over-smoothing
+frame_gen    = "interpolate"
+vrs_enabled  = true
+
+[tuning]
+ghost_threshold     = 0.05
+collapse_threshold  = 0.01
+rebirth_scale       = 0.5
+
+[spectral_io]
+divergence_threshold  = 0.15  # slightly above open_world — combat VFX causes intentional spikes
+                               # that are NOT scene transitions. Higher threshold reduces false triggers.
+salience_threshold    = 0.22  # less aggressive than open world — instance assets are pre-loaded
+prefetch_ttl_frames   = 20
+
+[render_budget]
+resolution_floor      = 0.60   # higher floor than open world — boss encounter VFX needs resolution
+skip_frames_allowed   = true
+afmf2_multiplier      = 2
+
+[notes]
+rationale = "Instance environments have frequent high-entropy bursts from ability VFX, particle systems, and many-player combat — these register as divergence spikes but are NOT scene transitions. divergence_threshold=0.15 vs open_world=0.12 avoids prefetching assets that are already loaded. resolution_floor=0.60 vs 0.50 because boss VFX aliasing at 0.50 is jarring and noticeable during high-attention moments."
