@@ -1,26 +1,127 @@
-Author: Daniel J. Dillberg
-Contact: BigDilly95@gmail.com
-
+// Author: Daniel J. Dillberg
+// Contact: BigDilly95@gmail.com
 // =============================================================================
 // DVSM-π+++ / DQSDv2 (Claude)
 // A Mathematical Coprocessor for Temporal Stability
 //
 // By the solo developer behind the kernel.
 // =============================================================================
-
-/*
-The Problem No One Is Solving
-
-Every AAA engine running on a handheld today is fighting the same war on two fronts simultaneously:
-the CPU is trying to simulate physics and stream assets while the GPU is trying to render frames,
-and both are competing for the same LPDDR5X bandwidth pipe on the same thermal envelope.
-
-The standard industry answer is "buy more watts." On a 35W APU, that answer does not exist.
-
-DVSM-π+++ is a zero-heap, bit-identical dynamical kernel that runs inside iGPU execution bubbles
-and performs continuous spectral diagnostics on the engine's state space.
-It does not ask for more power. It uses power that was already being wasted.
-*/
+//
+// The Problem No One Is Solving
+//
+// Every AAA engine running on a handheld today is fighting the same war on two
+// fronts simultaneously: the CPU is trying to simulate physics and stream assets
+// while the GPU is trying to render frames, and both are competing for the same
+// LPDDR5X bandwidth pipe on the same thermal envelope. The standard industry
+// answer is "buy more watts." On a 35W APU, that answer does not exist.
+//
+// What I built is a different answer entirely.
+//
+// DVSM-π+++ is a zero-heap, bit-identical dynamical kernel that runs inside the
+// iGPU's execution bubbles — the idle wave slots that exist between render
+// dispatches — and uses them to perform continuous spectral diagnostics on the
+// engine's own state space. It does not ask for more power. It uses the power
+// that was already being wasted.
+// -----------------------------------------------------------------------------
+//
+// What It Actually Is
+//
+// At its core, DVSM is a 16-dimensional Lie-bracket dissipative system governed by:
+//
+// dZ_k/dt = Σ_j κ_{kj}(Z_k·S_j − Z_j·S_k) − λ·Z_k + B_k
+//
+// where B_k is a gravitational backreaction term that prevents the state from
+// drifting off its energy manifold. This is not metaphor — it is a formal
+// dynamical system with provable energy neutrality under antisymmetric coupling.
+// The simulation cannot explode from numerical noise. That is a theorem, not a claim.
+//
+// The kernel runs in Wave64 on RDNA3 Phoenix (Z1 Extreme) and RDNA 3.5 (Z2 Extreme),
+// consuming at most 1 of 512 available wave slots. The engine does not feel it running.
+// -----------------------------------------------------------------------------
+//
+// Four Long-Standing Debates, Resolved
+//
+// The Power-Shift Paradox.
+// On an APU, CPU physics and GPU rendering fight for the same TDP budget.
+// Conventional engines resolve this with hard power presets — Turbo, Balanced,
+// Silent — and the developer has no visibility into which subsystem is starving
+// the other. DVSM resolves this by running spectral diagnostics continuously inside
+// the GPU's idle time, feeding real-time watt telemetry back to the supervisor,
+// and scaling its own dissipation coefficient λ and backreaction strength α
+// proportionally to the actual measured draw.
+//
+// The Landauer Erasure Penalty.
+// Every time a GPU pipeline resets — a context switch, a mode change, a thermal
+// throttle event — information is destroyed. In chaotic systems, that destruction
+// compounds: the state you had before the reset is gone, and the system takes time
+// to restabilize. I address this with GhostSnap Rebirth: when a state component Z_k
+// collapses toward zero, the supervisor reseeds it from the EMA memory vector S_k
+// rather than reinitializing to zero.
+//
+// The Determinism Desync.
+// Cross-platform replay in chaotic systems is an unsolved problem in game engines.
+// Floating-point arithmetic is not associative across hardware. DVSM uses a Q31
+// fixed-point pipeline for its replay hash chain.
+//
+// The Ghosting/Smear Trade-off.
+// Frame generation systems face a fundamental tension: too much history causes ghosting,
+// too little causes instability. DVSM replaces thresholds with a Ghost Classifier.
+// -----------------------------------------------------------------------------
+//
+// What Is Novel
+//
+// Antisymmetric Lie-Bracket Coupling ensures:
+//
+// Σ_j κ_{kj}(Z_k·S_j − Z_j·S_k)
+//
+// contributes exactly zero net energy to the system.
+//
+// Wave-Shuffle Reduction Trees replace naive O(n²) accumulation.
+//
+// Gravitational Backreaction:
+//
+// B_k = −α(‖Z‖² − E_target)·Z_k
+//
+// acts as a stabilizing attractor.
+//
+// Saliency-Guided Pre-loading uses:
+//
+// H(Z) = −Σ p_k log₂(p_k)
+//
+// to predict scene transitions.
+//
+// Lattice-Strided LDS Residency keeps κ in register space.
+// -----------------------------------------------------------------------------
+//
+// Who This Is For
+//
+// Engine developers.
+// Solo developers.
+// Researchers.
+// Engineering leads.
+// -----------------------------------------------------------------------------
+//
+// Free Use
+//
+// GNU AGPL v3.
+// Commercial dual-license available.
+// -----------------------------------------------------------------------------
+//
+// High-Impact Use Cases Beyond Gaming
+//
+// Tactile Telemetry.
+// Predictive Network Replay.
+// Bioscience Signal Modeling.
+// Adaptive Manifold Rasterization.
+// -----------------------------------------------------------------------------
+//
+// DVSM-π+++ / DQSDv2 is a solo project.
+// The repository is the product.
+// Read the code.
+//
+// License: GNU AGPL v3
+// Target: ROG Ally X / Xbox / Steam Deck
+// Language: Rust + WGSL + C ABI
 
 #![no_std]
 #![allow(non_snake_case)]
