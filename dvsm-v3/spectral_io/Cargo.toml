@@ -1,0 +1,14 @@
+[package]
+name        = "dvsm-spectral-io"
+version     = "3.0.0"
+edition     = "2021"
+license     = "AGPL-3.0-or-later"
+description = "Spectral pre-fetcher: entropy-triggered asset streaming for DVSM-v3"
+
+[lib]
+name       = "dvsm_spectral_io"
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[features]
+default = ["std"]
+std     = []

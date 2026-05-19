@@ -1,0 +1,15 @@
+# ROG Ally X — Performance mode (35 W)
+[profile]
+tdp_watts    = 35.0
+dt           = 0.004167   # 1/240
+lambda       = 0.12
+alpha        = 0.08
+e_target     = 1.0
+ema_beta     = 0.95
+frame_gen    = "interpolate"
+vrs_enabled  = true
+
+[tuning]
+ghost_threshold     = 0.05   # ‖z_synth − z_actual‖ trigger
+collapse_threshold  = 0.01   # |Z_k| < this → ghost rebirth
+rebirth_scale       = 0.5    # S_k * this on rebirth

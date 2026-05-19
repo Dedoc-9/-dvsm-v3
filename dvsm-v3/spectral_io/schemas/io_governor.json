@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title":   "SpectralIOGovernor",
+  "description": "Runtime configuration for the DVSM-v3 Spectral I/O Governor",
+  "type": "object",
+
+  "properties": {
+    "layer":              { "type": "string", "const": "Spectral_IO_Governor" },
+    "method":             { "type": "string", "const": "Asynchronous_Predictive_Streaming" },
+
+    "trigger": {
+      "type": "object",
+      "description": "Entropy divergence trigger parameters",
+      "properties": {
+        "divergence_threshold": {
+          "type":    "number",
+          "default": 0.15,
+          "description": "dH/dt > this (bits/frame) → trigger prefetch. Tune per title."
+        },
+        "diffuse_var_threshold": {
+          "type":    "number",
+          "default": 0.004,
+          "description": "|Z_k| variance above this → Diffuse class → lower mip"
+        },
+        "collapse_threshold": {
+          "type":    "number",
+          "default": 0.01,
+          "description": "mean |Z_k| below this → Collapsed → minimum mip"
+        }
+      }
+    },
+
+    "queue": {
+      "type": "object",
+      "properties": {
+        "capacity":           { "type": "integer", "default": 32 },
+        "max_jobs_per_trigger": { "type": "integer", "default": 4 },
+        "default_ttl_frames": { "type": "integer", "default": 16,
+          "description": "Prefetch jobs expire after this many frames. ~67ms at 240Hz." }
+      }
+    },
+
+    "markov": {
+      "type": "object",
+      "properties": {
+        "bucket_count": {
+          "type":    "integer",
+          "default": 8,
+          "description": "Entropy quantization buckets. Higher = more fidelity at O(B²) cost."
+        },
+        "salience_threshold": {
+          "type":    "number",
+          "default": 0.25,
+          "description": "P(next bucket) > this → enqueue prefetch for mapped asset group."
+        }
+      }
+    },
+
+    "compression": {
+      "type": "object",
+      "properties": {
+        "format_hint": {
+          "type":    "string",
+          "enum":    ["BC7", "ASTC", "BC1", "Unknown"],
+          "default": "BC7",
+          "description": "Default compression format for prefetch decompression hint."
+        }
+      }
+    },
+
+    "bandwidth_model": {
+      "type": "object",
+      "description": "Non-normative estimates. Validate with FrameVarianceRing.p99().",
+      "properties": {
+        "lpddr5x_peak_gb_s":    { "type": "number", "default": 60.0 },
+        "igpu_share_gb_s":      { "type": "number", "default": 35.0 },
+        "mip_savings_estimate": {
+          "type":        "string",
+          "default":     "25-35%",
+          "description": "Estimated bandwidth reduction from Diffuse mip bias. Title-dependent."
+        },
+        "stutter_target":       { "type": "string", "default": "eliminate_1_frame_hitches" }
+      }
+    },
+
+    "claims_policy": {
+      "type":        "string",
+      "description": "No bandwidth or FPS claims without FrameVarianceRing.p99() evidence.",
+      "const":       "measure_first"
+    }
+  },
+
+  "required": ["layer", "method"]
+}

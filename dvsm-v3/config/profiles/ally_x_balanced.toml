@@ -1,0 +1,15 @@
+# ROG Ally X — Balanced mode (25 W)
+[profile]
+tdp_watts    = 25.0
+dt           = 0.008333   # 1/120
+lambda       = 0.10
+alpha        = 0.06
+e_target     = 1.0
+ema_beta     = 0.93
+frame_gen    = "interpolate"
+vrs_enabled  = true
+
+[tuning]
+ghost_threshold     = 0.05
+collapse_threshold  = 0.01
+rebirth_scale       = 0.5

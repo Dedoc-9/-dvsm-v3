@@ -1,0 +1,17 @@
+[package]
+name        = "dvsm-v3"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "RDNA3 frame coherence supervisor: Lie-bracket dynamics, backreaction, frame gen, replay"
+
+[lib]
+name     = "dvsm_v3"
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+[features]
+default = ["std"]
+std     = []          # disable for no_std embedded targets
+
+[dependencies]
+# no runtime deps — zero-cost portability
