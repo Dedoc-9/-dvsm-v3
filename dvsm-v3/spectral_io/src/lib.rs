@@ -1,6 +1,6 @@
 // spectral_io/src/lib.rs  |  Spectral I/O crate root
 // Re-exports for engine integration.
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod entropy;
 pub mod markov_salience;
