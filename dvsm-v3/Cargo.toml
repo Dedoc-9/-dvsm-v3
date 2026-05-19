@@ -1,19 +1,26 @@
-[package]
-name              = "dvsm-v3"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-authors.workspace = true
-repository.workspace = true
-description       = "RDNA3 frame coherence supervisor: Lie-bracket dynamics, backreaction, frame gen, replay"
+[workspace]
+members  = ["src", "spectral_io"]
+resolver = "2"
 
-[lib]
-name       = "dvsm_v3"
-crate-type = ["rlib", "cdylib", "staticlib"]
+[workspace.package]
+version    = "3.0.0"
+edition    = "2021"
+license    = "AGPL-3.0-or-later"
+authors    = ["DVSM Contributors"]
+repository = "https://github.com/Dedoc-9/-dvsm-v3/tree/main"
 
-[features]
-default = ["std"]
-std     = []   # disable for no_std embedded targets
+# Shared deps — crates pin versions here; members use { workspace = true }
+[workspace.dependencies]
+dvsm-v3          = { path = "src" }
+dvsm-spectral-io = { path = "spectral_io" }
+sha2             = { version = "0.10", default-features = false }
 
-[dependencies]
-# no runtime deps — zero-cost portability
+[profile.release]
+lto           = true
+codegen-units = 1
+opt-level     = 3
+strip         = true
+panic         = "abort"
+
+[profile.dev]
+opt-level = 1   # dvsm_step is O(DIM²); debug-opt avoids unusably slow invariant tests
