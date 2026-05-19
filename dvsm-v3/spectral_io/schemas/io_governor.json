@@ -87,6 +87,71 @@
       "type":        "string",
       "description": "No bandwidth or FPS claims without FrameVarianceRing.p99() evidence.",
       "const":       "measure_first"
+    },
+
+    "genre_presets": {
+      "type": "object",
+      "description": "Per-genre overrides applied via SpectralIOGovernor::apply_genre(). All thresholds are tunable at runtime via GenreGovernor::switch_mode().",
+      "properties": {
+        "fps_competitive": {
+          "divergence_threshold": 0.22,
+          "salience_threshold":   0.35,
+          "prefetch_ttl_frames":  8,
+          "resolution_floor":     0.75,
+          "skip_frames":          false,
+          "afmf2_multiplier":     2,
+          "rationale": "High divergence threshold ignores flick-shot Z spikes. Low TTL matches fast-paced map reuse. Resolution floor 0.75 preserves pixel sharpness for target identification."
+        },
+        "fps_tactical": {
+          "divergence_threshold": 0.18,
+          "salience_threshold":   0.30,
+          "prefetch_ttl_frames":  12,
+          "resolution_floor":     0.67,
+          "skip_frames":          true,
+          "afmf2_multiplier":     2,
+          "rationale": "Allows frame skips during static scope holds (norm_variance < 0.05). Moderate thresholds for deliberate map traversal pacing."
+        },
+        "mmo_open_world": {
+          "divergence_threshold": 0.12,
+          "salience_threshold":   0.18,
+          "prefetch_ttl_frames":  32,
+          "resolution_floor":     0.50,
+          "skip_frames":          true,
+          "afmf2_multiplier":     4,
+          "rationale": "Low divergence threshold catches zone boundary transitions 8-12 frames early. 32-frame TTL gives streaming system time to load large texture packs. 4x AFMF2 during static camera (map screen, crafting UI) is essentially free."
+        },
+        "mmo_instance": {
+          "divergence_threshold": 0.15,
+          "salience_threshold":   0.22,
+          "prefetch_ttl_frames":  20,
+          "resolution_floor":     0.60,
+          "skip_frames":          true,
+          "afmf2_multiplier":     2,
+          "rationale": "Slightly higher divergence threshold than open world to avoid false triggers from combat VFX entropy bursts. Higher resolution floor (0.60 vs 0.50) because boss encounter details matter during high-attention moments."
+        }
+      }
+    },
+
+    "afmf2_bridge": {
+      "type": "object",
+      "description": "AFMF2 confidence signal parameters. See integration/afmf2_bridge.rs.",
+      "properties": {
+        "confidence_suppression_range_multiplier": {
+          "type":    "number",
+          "default": 3.0,
+          "description": "How many × divergence_threshold before confidence reaches 0. confidence = 1 - (|dH/dt| - threshold) / (threshold × this)."
+        },
+        "static_scene_confidence_floor": {
+          "type":    "number",
+          "default": 0.85,
+          "description": "Minimum confidence on stable scenes (norm_variance < 0.02, h_normalized < 0.30). Prevents suppressing AFMF2 on false spikes in completely static scenes."
+        },
+        "ghost_frame_invalidates_reference": {
+          "type":    "boolean",
+          "default": true,
+          "description": "If prior frame had ghost_err > threshold, do not use it as AFMF2 reference. Prevents optical flow from tracking a rebirth discontinuity."
+        }
+      }
     }
   },
 
