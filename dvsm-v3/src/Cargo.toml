@@ -1,17 +1,33 @@
 [package]
-name        = "dvsm-v3"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-description = "RDNA3 frame coherence supervisor: Lie-bracket dynamics, backreaction, frame gen, replay"
+name               = "dvsm-v3"
+version.workspace  = true
+edition.workspace  = true
+license.workspace  = true
+authors.workspace  = true
+repository.workspace = true
+description        = "RDNA3 frame coherence supervisor: Lie-bracket dynamics, backreaction, frame gen, replay"
 
 [lib]
-name     = "dvsm_v3"
+name       = "dvsm_v3"
 crate-type = ["rlib", "cdylib", "staticlib"]
 
+# hash_manifest: SHA-256 build reproducibility tool (requires --features tools)
+[[bin]]
+name               = "hash_manifest"
+path               = "../tools/hash_manifest.rs"
+required-features  = ["tools"]
+
 [features]
-default = ["std"]
-std     = []          # disable for no_std embedded targets
+default     = ["std"]
+std         = []                              # disable for no_std embedded targets
+integration = ["std", "dep:dvsm-spectral-io"] # genre governor, AFMF2 bridge, render budget
+tools       = ["std", "dep:sha2"]             # hash_manifest build-reproducibility binary
 
 [dependencies]
-# no runtime deps — zero-cost portability
+dvsm-spectral-io = { workspace = true, optional = true }
+sha2             = { workspace = true, optional = true }
+
+[dev-dependencies]
+# integration tests (tests/spectral_io_invariants.rs) reference the spectral crate directly
+dvsm-spectral-io = { workspace = true }
+
