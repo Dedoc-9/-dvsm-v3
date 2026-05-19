@@ -1,1 +1,14 @@
-{"enabled":true,"tdp_preset":"balanced","frame_gen":"interpolate","vrs_enabled":true,"ghost_threshold":0.05,"replay_enabled":true,"security_verify":true}
+{
+  "enabled": true,
+  "tdp_preset": "balanced",
+  "frame_gen": "interpolate",
+  "vrs_enabled": true,
+  "ghost_threshold": 0.05,
+  "replay_enabled": true,
+  "security_verify": true,
+  "genre_mode": "mmo_open_world",
+  "genre_mode_options": ["fps_competitive", "fps_tactical", "mmo_open_world", "mmo_instance"],
+  "afmf2_bridge_enabled": true,
+  "render_budget_enabled": true,
+  "resolution_floor_override": null
+}
