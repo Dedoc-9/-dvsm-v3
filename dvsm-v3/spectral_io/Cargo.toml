@@ -12,3 +12,7 @@ crate-type = ["rlib", "cdylib", "staticlib"]
 [features]
 default = ["std"]
 std     = []
+
+[[test]]
+name = "spectral_io_invariants"
+path = "../tests/spectral_io_invariants.rs"
