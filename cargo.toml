@@ -1,5 +1,5 @@
 [workspace]
-members = ["src"]
+members  = ["src", "spectral_io"]
 resolver = "2"
 
 [workspace.package]
@@ -7,7 +7,7 @@ version     = "3.0.0"
 edition     = "2021"
 license     = "AGPL-3.0-or-later"
 authors     = ["DVSM Contributors"]
-repository  = " "
+repository  = "https://github.com/Dedoc-9/-dvsm-v3/tree/main"
 
 [profile.release]
 lto           = true
@@ -15,3 +15,6 @@ codegen-units = 1
 opt-level     = 3
 strip         = true
 panic         = "abort"
+
+[profile.dev]
+opt-level = 1   # fast enough for fixed-point iteration without debug crawl
