@@ -40,7 +40,7 @@
 //   These are independently valid; together they compound.
 // =============================================================================
 
-use dvsm_v3::{WattageProfile, FrameGenMode};
+use crate::{WattageProfile, FrameGenMode};
 
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq)]
