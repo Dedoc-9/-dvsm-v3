@@ -7,7 +7,7 @@ version    = "3.0.0"
 edition    = "2021"
 license    = "AGPL-3.0-or-later"
 authors    = ["DVSM Contributors"]
-repository = "https://github.com/Dedoc-9/-dvsm-v3/tree/main"
+repository = "https://github.com/your-org/dvsm-v3"
 
 # Shared deps — crates pin versions here; members use { workspace = true }
 [workspace.dependencies]
