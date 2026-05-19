@@ -31,3 +31,7 @@ sha2             = { workspace = true, optional = true }
 # integration tests (tests/spectral_io_invariants.rs) reference the spectral crate directly
 dvsm-spectral-io = { workspace = true }
 
+[[test]]
+name = "invariants"
+path = "../tests/invariants.rs"
+
