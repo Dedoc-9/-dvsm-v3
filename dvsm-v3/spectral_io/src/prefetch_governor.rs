@@ -45,7 +45,7 @@
 use crate::spectral_io::src::entropy::{
     SpectralEntropyState, ModeClassifier, DIM, DIVERGENCE_THRESHOLD,
 };
-use crate::spectral_io::src::markov_salience::{MarkovSalience, BUCKET_COUNT};
+use crate::spectral_io::src::markov_salience::{MarkovSalience, BUCKET_COUNT, SALIENCE_THRESHOLD};
 
 // ---------------------------------------------------------------------------
 // PREFETCH JOB  (engine-consumable work item)
@@ -198,6 +198,23 @@ pub struct SpectralIOGovernor {
     pub default_ttl: u16,
     /// Default compression format hint
     pub format_hint: CompressionFormat,
+
+    // Genre-tunable thresholds. Set via GenreGovernor before first tick().
+    // Defaults match the original constants (generic / non-genre mode).
+
+    /// dH/dt magnitude that fires a prefetch trigger. Default: 0.15.
+    /// FPS competitive: 0.22 (ignore flick-shot spikes).
+    /// MMO open world: 0.12 (catch zone-boundary transitions early).
+    pub divergence_threshold: f32,
+
+    /// P(next_bucket) required to enqueue a prefetch job. Default: 0.25.
+    /// MMO open world: 0.18 (aggressive — assets are large and slow).
+    /// FPS competitive: 0.35 (conservative — map assets are small).
+    pub salience_threshold: f32,
+
+    /// Render resolution scale output from RenderBudgetAllocator.
+    /// Updated each tick so the engine can read a single governor output.
+    pub resolution_scale: f32,
 }
 
 impl SpectralIOGovernor {
@@ -212,7 +229,22 @@ impl SpectralIOGovernor {
             max_jobs_per_trigger: 4,
             default_ttl:          16,   // ~67ms at 240Hz — enough to decompress BC7
             format_hint:          CompressionFormat::BC7,
+            divergence_threshold: DIVERGENCE_THRESHOLD,
+            salience_threshold:   SALIENCE_THRESHOLD,
+            resolution_scale:     1.0,
         }
+    }
+
+    /// Apply genre-tuned thresholds. Call once after construction or on genre switch.
+    pub fn apply_genre(
+        &mut self,
+        divergence_threshold: f32,
+        salience_threshold:   f32,
+        default_ttl:          u16,
+    ) {
+        self.divergence_threshold = divergence_threshold;
+        self.salience_threshold   = salience_threshold;
+        self.default_ttl          = default_ttl;
     }
 
     /// Full per-frame tick. Call after DVSMSupervisor::tick().
@@ -246,8 +278,9 @@ impl SpectralIOGovernor {
         // 5. Age existing jobs
         self.queue.tick_ttl();
 
-        // 6. If triggered: enqueue prefetch jobs
-        let jobs_enqueued = if trigger {
+        // 6. If triggered: enqueue prefetch jobs using genre-tuned thresholds
+        let trigger_genre = self.entropy.divergence_rate.abs() > self.divergence_threshold;
+        let jobs_enqueued = if trigger_genre {
             let lead = self.entropy.estimated_lead_frames();
             let ttl  = (self.default_ttl as u32 + lead).min(60) as u16;
             let groups = self.markov.prioritized_groups(
@@ -258,24 +291,29 @@ impl SpectralIOGovernor {
             let mut count = 0u32;
             for &g in groups.as_slice() {
                 let b = g as usize % BUCKET_COUNT;
-                self.queue.enqueue(PrefetchJob {
-                    group_id:    g,
-                    priority:    sal[b],
-                    ttl_frames:  ttl,
-                    format_hint: self.format_hint,
-                    _pad:        0,
-                });
-                count += 1;
+                // Filter by genre salience threshold instead of the hardcoded constant
+                if sal[b] > self.salience_threshold {
+                    self.queue.enqueue(PrefetchJob {
+                        group_id:    g,
+                        priority:    sal[b],
+                        ttl_frames:  ttl,
+                        format_hint: self.format_hint,
+                        _pad:        0,
+                    });
+                    count += 1;
+                }
             }
             count
         } else { 0 };
 
         GovFrameResult {
-            triggered:      trigger,
+            triggered:       trigger_genre,
             jobs_enqueued,
-            mip_hints:      self.mip_hints,
+            mip_hints:       self.mip_hints,
             divergence_rate: self.entropy.divergence_rate,
-            h_normalized:   self.entropy.h_normalized(),
+            h_normalized:    self.entropy.h_normalized(),
+            lead_frames:     self.entropy.estimated_lead_frames(),
+            resolution_scale: self.resolution_scale,
         }
     }
 
@@ -299,9 +337,14 @@ impl SpectralIOGovernor {
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default)]
 pub struct GovFrameResult {
-    pub triggered:       bool,
-    pub jobs_enqueued:   u32,
-    pub mip_hints:       MipHintBuffer,
-    pub divergence_rate: f32,
-    pub h_normalized:    f32,
+    pub triggered:        bool,
+    pub jobs_enqueued:    u32,
+    pub mip_hints:        MipHintBuffer,
+    pub divergence_rate:  f32,
+    pub h_normalized:     f32,
+    /// Frames until entropy peak (0 = at peak). Feed to Afmf2Bridge and RenderBudgetAllocator.
+    pub lead_frames:      u32,
+    /// Recommended render resolution scale from RenderBudgetAllocator [floor, 1.0].
+    /// Updated by GenreGovernor each tick. Engine reads this for DRS.
+    pub resolution_scale: f32,
 }
