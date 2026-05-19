@@ -42,10 +42,8 @@
 //   This prevents bandwidth waste from false triggers.
 // =============================================================================
 
-use crate::spectral_io::src::entropy::{
-    SpectralEntropyState, ModeClassifier, DIM, DIVERGENCE_THRESHOLD,
-};
-use crate::spectral_io::src::markov_salience::{MarkovSalience, BUCKET_COUNT, SALIENCE_THRESHOLD};
+use crate::entropy::{SpectralEntropyState, ModeClassifier, DIM, DIVERGENCE_THRESHOLD};
+use crate::markov_salience::{MarkovSalience, BUCKET_COUNT, SALIENCE_THRESHOLD};
 
 // ---------------------------------------------------------------------------
 // PREFETCH JOB  (engine-consumable work item)
@@ -120,32 +118,25 @@ impl PrefetchQueue {
         Some(job)
     }
 
-    /// Age all jobs by 1 frame. Remove expired (ttl = 0).
+    /// Age all jobs by 1 frame. Remove any whose ttl reaches 0.
     pub fn tick_ttl(&mut self) {
-        let mut i = self.head;
-        let mut new_count = 0;
-        for _ in 0..self.count {
-            if self.jobs[i].ttl_frames > 0 {
-                self.jobs[i].ttl_frames -= 1;
-                new_count += 1;
-            }
-            i = (i + 1) % QUEUE_CAPACITY;
-        }
-        // Compact: rebuild from survivors. Simple O(N) for N=32.
         let mut tmp = [PrefetchJob::default(); QUEUE_CAPACITY];
         let mut w = 0usize;
         let mut r = self.head;
         for _ in 0..self.count {
-            if self.jobs[r].ttl_frames > 0 {
-                tmp[w] = self.jobs[r];
+            let mut job = self.jobs[r];
+            if job.ttl_frames > 1 {
+                job.ttl_frames -= 1;
+                tmp[w] = job;
                 w += 1;
             }
+            // ttl == 0 or ttl == 1: expires this tick, not copied
             r = (r + 1) % QUEUE_CAPACITY;
         }
         self.jobs = tmp;
         self.head = 0;
         self.tail = w;
-        self.count = new_count;
+        self.count = w;
     }
 
     pub fn len(&self) -> usize { self.count }
@@ -261,7 +252,7 @@ impl SpectralIOGovernor {
         dt: f32,
     ) -> GovFrameResult {
         // 1. Update entropy
-        let trigger = self.entropy.update(z, norm_sq, dt);
+        let _trigger = self.entropy.update(z, norm_sq, dt);
 
         // 2. Update mode classifier
         self.classifier.update(z);
