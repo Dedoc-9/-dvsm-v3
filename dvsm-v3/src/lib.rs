@@ -30,14 +30,12 @@
 //     Q31 range: [-1, 1). For values outside, use Q16 with explicit scale.
 // =============================================================================
 
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::excessive_precision)]
 
 #[cfg(feature = "integration")]
 #[path = "../integration/mod.rs"]
 pub mod integration;
-
-use core::f32::consts::PI;
 
 // ---------------------------------------------------------------------------
 // 1.  CONSTANTS  (all tunable via WattageProfile)
@@ -408,7 +406,11 @@ impl FrameReplay {
         tdp: f32,
         prev_chain: u64,
     ) -> Self {
-        let hash_chain = state.replay_hash ^ prev_chain;
+        // Fresh per-frame hash derived directly from z[] values.
+        // Distinct from DVSMState.replay_hash (which is a rolling accumulator
+        // used for sequence determinism). Using z[] here means verify() can
+        // recompute it and catch any mutation of state_snap.z after record creation.
+        let hash_chain = Self::z_hash(&state.z) ^ prev_chain;
         Self {
             frame_index: idx,
             timestamp: ts,
@@ -419,9 +421,21 @@ impl FrameReplay {
         }
     }
 
-    /// Verify chain: given previous hash_chain, does this record's chain match?
+    fn z_hash(z: &[f32; DIM]) -> u64 {
+        let mut h: u64 = 0;
+        for k in 0..DIM {
+            let clamped = z[k].clamp(-1.0 + 1e-7, 1.0 - 1e-7);
+            let q = (clamped * Q31_SCALE) as i32 as u32;
+            h ^= (q as u64).wrapping_mul(0x9e3779b97f4a7c15)
+                           .wrapping_add((k as u64) << 32);
+        }
+        h
+    }
+
+    /// Verify chain integrity. Recomputes hash from z[] so any mutation
+    /// of state_snap.z (not just replay_hash) is caught.
     pub fn verify(&self, prev_chain: u64) -> bool {
-        self.hash_chain == (self.state_snap.replay_hash ^ prev_chain)
+        self.hash_chain == (Self::z_hash(&self.state_snap.z) ^ prev_chain)
     }
 }
 
@@ -566,7 +580,6 @@ impl DVSMSupervisor {
         actual_watts:       f32,
         thermal_headroom_c: f32,
     ) -> bool {
-
         let b = if self.profile.tdp_watts > 0.0 {
             (actual_watts / self.profile.tdp_watts).clamp(0.0, 1.0)
         } else { 0.0 };
